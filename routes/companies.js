@@ -22,20 +22,32 @@ router.get("/", async function (req, res, next) {
 });
 
 
-/** GET /[code] - return data about one company: `{company: {code, name, description}}` */
+/** GET /[code] - return data about one company: 
+ * `{company: {code, name, description, invoices: [id, ...]}}` */
 
 router.get("/:code", async function (req, res, next) {
   const code = req.params.code;
-  const results = await db.query(
+  const companyResults = await db.query(
     `SELECT code, name, description 
         FROM companies 
         WHERE code = $1
         ORDER BY code`,
     [code]
   );
-  const company = results.rows[0];
+  const company = companyResults.rows[0];
+
+  const invoicesResults = await db.query(
+    `SELECT id, amt, paid, add_date, paid_date
+        FROM invoices 
+        WHERE comp_code = $1
+        ORDER BY id`,
+    [code]
+  );
+  const invoices = invoicesResults.rows;
 
   if (!company) throw new NotFoundError(`No matching company: ${code}`);
+
+  company.invoices = invoices;
   return res.json({ company });
 });
 
