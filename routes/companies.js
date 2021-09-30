@@ -8,30 +8,32 @@ const router = new express.Router();
 const db = require("../db");
 
 
-/** GET / - returns `{cats: [cat, ...]}` */
+/** GET / - returns `{companies: [{code, name}, ...]}` */
 
 router.get("/", async function (req, res, next) {
-  const results = await db.query("SELECT id, name FROM cats");
-  const cats = results.rows;
+  const results = await db.query("SELECT code, name FROM companies");
+  const companies = results.rows;
 
-  return res.json({ cats });
+  return res.json({ companies });
 });
 
 
-/** GET /[id] - return data about one cat: `{cat: cat}` */
+/** GET /[code] - return data about one company: `{company: {code, name, description}}` */
 
-router.get("/:id", async function (req, res, next) {
-  const id = req.params.id;
+router.get("/:code", async function (req, res, next) {
+  const code = req.params.code;
   const results = await db.query(
-    "SELECT id, name FROM cats WHERE id = $1", [id]);
-  const cat = results.rows[0];
+    "SELECT code, name, description FROM companies WHERE code = $1", [code]);
+  const company = results.rows[0];
 
-  if (!cat) throw new NotFoundError(`No matching cat: ${id}`);
-  return res.json({ cat });
+  if (!company) throw new NotFoundError(`No matching company: ${code}`);
+  return res.json({ company });
 });
 
 
-/** POST / - create cat from data; return `{cat: cat}` */
+/** POST / - create company from data formatted like below:
+    * {code, name, description} 
+ * return `{company: {code, name, description}}` */
 
 router.post("/", async function (req, res, next) {
   const results = await db.query(
@@ -45,9 +47,9 @@ router.post("/", async function (req, res, next) {
 });
 
 
-/** PATCH /[id] - update fields in cat; return `{cat: cat}` */
+/** Put /[code] - update fields in company; return `{company: {code, name, description}}` */
 
-router.patch("/:id", async function (req, res, next) {
+router.put("/:id", async function (req, res, next) {
   if ("id" in req.body) throw new BadRequestError("Not allowed");
 
   const id = req.params.id;
@@ -64,7 +66,7 @@ router.patch("/:id", async function (req, res, next) {
 });
 
 
-/** DELETE /[id] - delete cat, return `{message: "Cat deleted"}` */
+/** DELETE /[code] - delete company, return `{status: "deleted"}` */
 
 router.delete("/:id", async function (req, res, next) {
   const id = req.params.id;
