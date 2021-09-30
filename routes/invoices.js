@@ -1,4 +1,5 @@
 "use strict";
+/** Routes about invoices. */
 
 
 const express = require("express");

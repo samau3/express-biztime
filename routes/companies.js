@@ -1,5 +1,5 @@
 "use strict";
-/** Routes about cats. */
+/** Routes about companies. */
 
 const express = require("express");
 const { NotFoundError, BadRequestError } = require("../expressError");
@@ -8,7 +8,7 @@ const router = new express.Router();
 const db = require("../db");
 
 
-/** GET / - returns `{companies: [{code, name}, ...]}` */
+/** GET / - returns array of all companies `{companies: [{code, name}, ...]}` */
 
 router.get("/", async function (req, res, next) {
   const results = await db.query("SELECT code, name FROM companies");
@@ -32,50 +32,51 @@ router.get("/:code", async function (req, res, next) {
 
 
 /** POST / - create company from data formatted like below:
-    * {code, name, description} 
- * return `{company: {code, name, description}}` */
-
+  *    {code, name, description} 
+  * return `{company: {code, name, description}}` */
 router.post("/", async function (req, res, next) {
   const results = await db.query(
-    `INSERT INTO cats (name)
-         VALUES ($1)
-         RETURNING id, name`,
-    [req.body.name]);
-  const cat = results.rows[0];
+    `INSERT INTO companies (code, name, description)
+         VALUES ($1, $2, $3)
+         RETURNING code, name, description`,
+    [req.body.code, req.body.name, req.body.description]);
+  const company = results.rows[0];
 
-  return res.status(201).json({ cat });
+  return res.status(201).json({ company });
 });
 
 
-/** Put /[code] - update fields in company; return `{company: {code, name, description}}` */
+/** PUT /[code] - update name and description in a company; 
+ * return `{company: {code, name, description}}` 
+ */
 
-router.put("/:id", async function (req, res, next) {
-  if ("id" in req.body) throw new BadRequestError("Not allowed");
+router.put("/:code", async function (req, res, next) {
+  if ("code" in req.body) throw new BadRequestError("Not allowed");
 
-  const id = req.params.id;
+  const code = req.params.code;
   const results = await db.query(
-    `UPDATE cats
-         SET name=$1
-         WHERE id = $2
-         RETURNING id, name`,
-    [req.body.name, id]);
-  const cat = results.rows[0];
+    `UPDATE companies
+         SET name= $1, description = $2
+         WHERE code = $3
+         RETURNING name, description`,
+    [req.body.name, req.body.description, code]);
+  const company = results.rows[0];
 
-  if (!cat) throw new NotFoundError(`No matching cat: ${id}`);
-  return res.json({ cat });
+  if (!company) throw new NotFoundError(`No matching company: ${code}`);
+  return res.json({ company });
 });
 
 
-/** DELETE /[code] - delete company, return `{status: "deleted"}` */
+/** DELETE /[code] - delete a company, return `{status: "deleted"}` */
 
-router.delete("/:id", async function (req, res, next) {
-  const id = req.params.id;
+router.delete("/:code", async function (req, res, next) {
+  const code = req.params.code;
   const results = await db.query(
-    "DELETE FROM cats WHERE id = $1 RETURNING id", [id]);
-  const cat = results.rows[0];
+    "DELETE FROM companies WHERE code = $1 RETURNING code", [code]);
+  const company = results.rows[0];
 
-  if (!cat) throw new NotFoundError(`No matching cat: ${id}`);
-  return res.json({ message: "Cat deleted" });
+  if (!company) throw new NotFoundError(`No matching company: ${code}`);
+  return res.json({ status: "deleted" });
 });
 
 
